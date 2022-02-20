@@ -1,0 +1,9 @@
+---
+# defaults file for k8s-worker
+
+
+kube_apiserver_ips: |-
+  {% for item in groups['kube-master'] -%}
+    {{ hostvars[item]["ansible_host"] }}{% if not loop.last %},{% endif %}
+  {%- endfor %}
+

@@ -1,0 +1,118 @@
+---
+# tasks file for k8s-binary
+- name: Debug Flavor
+  debug:
+    var: ansible_facts['distribution']
+
+- name: Create k8s/docker directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '755'
+  with_items:
+    - /etc/kubernetes/manifests
+    - /etc/docker/
+    - /var/lib/kubelet
+
+- name: Copy the install binaries folder 
+  copy:
+    src: /app/data/k8s-install-binaries
+    dest: /app/data/
+    mode: 755
+  when:
+    - inventory_hostname != groups['k8s-binary']|first
+
+- name: install kubernetes and docker binaries Ubuntu
+  apt:
+    deb: "{{ item }}"
+  with_items:
+    - "{{ k8s_files }}/containerd.io_1.2.6-3_amd64.deb"
+    - "{{ k8s_files }}/docker-ce_5%3a19.03.13~3-0~ubuntu-bionic_amd64.deb"
+    - "{{ k8s_files }}/docker-ce-cli_5%3a19.03.13~3-0~ubuntu-bionic_amd64.deb"
+    - "{{ k8s_files }}/apt-transport-https_1.6.12ubuntu0.2_all.deb"
+    - "{{ k8s_files }}/socat_1.7.3.2-2ubuntu2_amd64.deb"
+    - "{{ k8s_files }}/conntrack_1%3a1.4.4+snapshot20161117-6ubuntu2_amd64.deb"
+    - "{{ k8s_files }}/cri-tools_1.13.0-01_amd64.deb"
+    - "{{ k8s_files }}/kubernetes-cni_0.8.7-00_amd64.deb"
+    - "{{ k8s_files }}/kubeadm_1.18.9-00_amd64.deb"
+    - "{{ k8s_files }}/kubelet_1.18.9-00_amd64.deb"
+    - "{{ k8s_files }}/kubectl_1.18.9-00_amd64.deb"
+    - "{{ k8s_files }}/kubeadm_1.18.9-00_amd64.deb"
+  retries: 3
+  delay: 5
+  when:
+    - ansible_facts['distribution'] == "Ubuntu"
+
+- name: install kubernetes and docker binaries CentOS
+  yum:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - "{{ k8s_files }}/container-selinux-2.107-3.el7.noarch.rpm"
+    - "{{ k8s_files }}/containerd.io-1.2.6-3.3.el7.x86_64.rpm"
+    - "{{ k8s_files }}/docker-ce-19.03.13-3.el7.x86_64.rpm"
+    - "{{ k8s_files }}/docker-ce-cli-19.03.6-3.el7.x86_64.rpm"
+    - "{{ k8s_files }}/kubelet-1.18.9-0.x86_64.rpm"
+    - "{{ k8s_files }}/kubectl-1.18.9-0.x86_64.rpm"
+    - "{{ k8s_files }}/kubeadm-1.18.9-0.x86_64.rpm"
+    - "{{ k8s_files }}/cri-tools-1.13.0-0.x86_64.rpm"
+    - "{{ k8s_files }}/kubernetes-cni-0.8.7-0.x86_64.rpm"
+  when:
+    - ansible_facts['distribution'] == "CentOS"
+
+- name: Create kubelet service Ubuntu
+  template:
+    src: kubelet.service.j2
+    dest: /lib/systemd/system/kubelet.service
+    mode: 755
+  when:
+    - ansible_facts['distribution'] == "Ubuntu"
+
+- name: Create kubelet service CentOS
+  template:
+    src: kubelet.service.j2
+    dest: /usr/lib/systemd/system/kubelet.service
+    mode: 755
+  when:
+    - ansible_facts['distribution'] == "CentOS" 
+
+
+- name: Create kubelet respective files - kubeadm-flags.env
+  template:
+    src: kubeadm-flags.env.j2
+    dest: /var/lib/kubelet/kubeadm-flags.env
+    mode: 755
+
+- name: Create kubelet respective files - config.yaml
+  template:
+    src: config.yaml.j2
+    dest: /var/lib/kubelet/config.yaml
+    mode: 755
+
+
+
+- name: create the daemon.json file for docker
+  template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+    mode: 755
+
+- name: Reload,enable and restart docker
+  systemd:
+    name: docker
+    state: restarted
+    daemon_reload: true
+    enabled: yes
+
+- name: docker login for nexus
+  shell: docker login 10.26.61.34:8083 -uadmin -pGanesha@09 ; docker login 10.26.61.34:8084 -uadmin -pGanesha@09 ; docker login 10.26.61.51:8085 -uadmin -pGanesha@09
+
+- name: Reload,enable and restart kubelet
+  systemd:
+    name: kubelet
+    state: started
+    daemon_reload: true
+    enabled: yes
+

@@ -1,0 +1,25 @@
+- hosts: all
+  tasks:
+
+  - name: Etcd backup and backup status
+    shell: ETCDCTL_API=3 etcdctl --cacert=/etc/etcd/ssl/ca.pem --cert=/etc/etcd/ssl/etcd.pem --key=/etc/etcd/ssl/etcd-key.pem --endpoints http://127.0.0.1:2379 snapshot save backup.db; ETCDCTL_API=3 etcdctl --cacert=/etc/etcd/ssl/ca.pem --cert=/etc/etcd/ssl/etcd.pem --key=/etc/etcd/ssl/etcd-key.pem --endpoints http://127.0.0.1:2379 --write-out=table snapshot status backup.db
+
+  - name: Stop etcd service
+    systemd:
+      name: etcd
+      state: stopped
+      daemon_reload: true
+      enabled: yes
+
+  - name: Update new binaries
+    shell: scp -rp /app/data/upgrade-binaries/etcd* /usr/local/bin/
+
+  - name: Start etcd service
+    systemd:
+      name: etcd
+      state: started
+      daemon_reload: true
+      enabled: yes
+
+  - name: Check cluster health
+    shell: ETCDCTL_API=3 etcdctl --cacert=/etc/etcd/ssl/ca.pem --cert=/etc/etcd/ssl/etcd.pem --key=/etc/etcd/ssl/etcd-key.pem --endpoints  http://127.0.0.1:2379 -w table endpoint --cluster status; ETCDCTL_API=3 etcdctl --cacert=/etc/etcd/ssl/ca.pem --cert=/etc/etcd/ssl/etcd.pem --key=/etc/etcd/ssl/etcd-key.pem --endpoints  http://127.0.0.1:2379 -w table endpoint --cluster health

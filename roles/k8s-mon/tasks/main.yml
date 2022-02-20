@@ -1,0 +1,118 @@
+- name: Create k8s dashboard yaml
+  template: 
+    src: dashboard.j2
+    dest: /app/data/k8s-install-binaries/dashboard.yml
+
+- name: Create k8s filebeat dev yaml
+  template: 
+    src: filebeat-dev.j2
+    dest: /app/data/k8s-install-binaries/filebeat.yml
+  when:
+    - env == "dev"
+
+- name: Create k8s filebeat qa yaml
+  template:
+    src: filebeat-qa.j2
+    dest: /app/data/k8s-install-binaries/filebeat.yml
+  when:
+    - env == "qa"
+
+- name: Create k8s filebeat ppd yaml
+  template:
+    src: filebeat-ppd.j2
+    dest: /app/data/k8s-install-binaries/filebeat.yml
+  when:
+    - env == "ppd"
+
+- name: Create k8s filebeat prod yaml
+  template:
+    src: filebeat-prod.j2
+    dest: /app/data/k8s-install-binaries/filebeat.yml
+  when:
+    - env == "prod"
+
+- name: Create k8s metribeat dev yaml
+  template: 
+    src: metricbeat-dev.j2
+    dest: /app/data/k8s-install-binaries/metricbeat.yml
+  when:
+    - env == "dev"
+
+- name: Create k8s metribeat qa yaml
+  template:
+    src: metricbeat-qa.j2
+    dest: /app/data/k8s-install-binaries/metricbeat.yml
+  when:
+    - env == "qa"
+
+- name: Create k8s metribeat ppd yaml
+  template:
+    src: metricbeat-ppd.j2
+    dest: /app/data/k8s-install-binaries/metricbeat.yml
+  when:
+    - env == "ppd"
+
+- name: Create k8s metribeat prod yaml
+  template:
+    src: metricbeat-prod.j2
+    dest: /app/data/k8s-install-binaries/metricbeat.yml
+  when:
+    - env == "prod"
+
+- name: Create k8s heapster yaml
+  template: 
+    src: heapster.j2
+    dest: /app/data/k8s-install-binaries/heapster.yml
+
+- name: Create k8s metric-server yaml
+  template: 
+    src: metrics-server.j2
+    dest: /app/data/k8s-install-binaries/metrics-server.yml
+
+- name: Create k8s kube-state-metrics yaml
+  template: 
+    src: kube-state-metrics.j2
+    dest: /app/data/k8s-install-binaries/kube-state-metrics.yml
+
+- name: Create Velero dev yaml
+  template:
+    src: velero-dev.j2
+    dest: /app/data/k8s-install-binaries/velero.yml
+  when:
+    - env == "dev"
+
+- name: Create Velero qa yaml
+  template:
+    src: velero-qa.j2
+    dest: /app/data/k8s-install-binaries/velero.yml
+  when:
+    - env == "qa"
+
+- name: Create Velero ppd/prod yaml
+  template:
+    src: velero-prod.j2
+    dest: /app/data/k8s-install-binaries/velero.yml
+  when:
+    - env == "ppd" or env == "prod"
+
+- name: Apply the yamls
+  shell: /usr/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f /app/data/k8s-install-binaries/dashboard.yml -f /app/data/k8s-install-binaries/filebeat.yml -f /app/data/k8s-install-binaries/metricbeat.yml -f /app/data/k8s-install-binaries/metrics-server.yml -f /app/data/k8s-install-binaries/kube-state-metrics.yml -f /app/data/k8s-install-binaries/heapster.yml -f /app/data/k8s-install-binaries/velero.yml
+
+- name: Debug velero backup schedule command
+  debug:
+    msg: 'velero schedule create k8s-{{ name }}-{{ env }}-backup --schedule="30 08,20 * * *" --ttl 168h'
+
+- name: Pause
+  pause:
+    prompt: "validate backup command"
+
+- name: Velero Schedule Backup
+  shell: velero schedule create k8s-{{ name }}-{{ env }}-backup --schedule="30 08,20 * * *" --ttl 168h
+
+- name: Test Velero
+  shell: velero backup get
+  register: velero
+
+- name: Velero Backup Get Output
+  debug:
+    msg: "{{ velero }}"

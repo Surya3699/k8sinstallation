@@ -1,0 +1,310 @@
+apiVersion: v1
+items:
+- apiVersion: apiextensions.k8s.io/v1beta1
+  kind: CustomResourceDefinition
+  metadata:
+    creationTimestamp: null
+    labels:
+      component: velero
+    name: backups.velero.io
+  spec:
+    group: velero.io
+    names:
+      kind: Backup
+      plural: backups
+    scope: Namespaced
+    version: v1
+- apiVersion: apiextensions.k8s.io/v1beta1
+  kind: CustomResourceDefinition
+  metadata:
+    creationTimestamp: null
+    labels:
+      component: velero
+    name: downloadrequests.velero.io
+  spec:
+    group: velero.io
+    names:
+      kind: DownloadRequest
+      plural: downloadrequests
+    scope: Namespaced
+    version: v1
+- apiVersion: apiextensions.k8s.io/v1beta1
+  kind: CustomResourceDefinition
+  metadata:
+    creationTimestamp: null
+    labels:
+      component: velero
+    name: podvolumebackups.velero.io
+  spec:
+    group: velero.io
+    names:
+      kind: PodVolumeBackup
+      plural: podvolumebackups
+    scope: Namespaced
+    version: v1
+- apiVersion: apiextensions.k8s.io/v1beta1
+  kind: CustomResourceDefinition
+  metadata:
+    creationTimestamp: null
+    labels:
+      component: velero
+    name: podvolumerestores.velero.io
+  spec:
+    group: velero.io
+    names:
+      kind: PodVolumeRestore
+      plural: podvolumerestores
+    scope: Namespaced
+    version: v1
+- apiVersion: apiextensions.k8s.io/v1beta1
+  kind: CustomResourceDefinition
+  metadata:
+    creationTimestamp: null
+    labels:
+      component: velero
+    name: backupstoragelocations.velero.io
+  spec:
+    group: velero.io
+    names:
+      kind: BackupStorageLocation
+      plural: backupstoragelocations
+    scope: Namespaced
+    version: v1
+- apiVersion: apiextensions.k8s.io/v1beta1
+  kind: CustomResourceDefinition
+  metadata:
+    creationTimestamp: null
+    labels:
+      component: velero
+    name: volumesnapshotlocations.velero.io
+  spec:
+    group: velero.io
+    names:
+      kind: VolumeSnapshotLocation
+      plural: volumesnapshotlocations
+    scope: Namespaced
+    version: v1
+- apiVersion: apiextensions.k8s.io/v1beta1
+  kind: CustomResourceDefinition
+  metadata:
+    creationTimestamp: null
+    labels:
+      component: velero
+    name: restores.velero.io
+  spec:
+    group: velero.io
+    names:
+      kind: Restore
+      plural: restores
+    scope: Namespaced
+    version: v1
+- apiVersion: apiextensions.k8s.io/v1beta1
+  kind: CustomResourceDefinition
+  metadata:
+    creationTimestamp: null
+    labels:
+      component: velero
+    name: schedules.velero.io
+  spec:
+    group: velero.io
+    names:
+      kind: Schedule
+      plural: schedules
+    scope: Namespaced
+    version: v1
+- apiVersion: apiextensions.k8s.io/v1beta1
+  kind: CustomResourceDefinition
+  metadata:
+    creationTimestamp: null
+    labels:
+      component: velero
+    name: deletebackuprequests.velero.io
+  spec:
+    group: velero.io
+    names:
+      kind: DeleteBackupRequest
+      plural: deletebackuprequests
+    scope: Namespaced
+    version: v1
+- apiVersion: apiextensions.k8s.io/v1beta1
+  kind: CustomResourceDefinition
+  metadata:
+    creationTimestamp: null
+    labels:
+      component: velero
+    name: resticrepositories.velero.io
+  spec:
+    group: velero.io
+    names:
+      kind: ResticRepository
+      plural: resticrepositories
+    scope: Namespaced
+    version: v1
+- apiVersion: apiextensions.k8s.io/v1beta1
+  kind: CustomResourceDefinition
+  metadata:
+    creationTimestamp: null
+    labels:
+      component: velero
+    name: serverstatusrequests.velero.io
+  spec:
+    group: velero.io
+    names:
+      kind: ServerStatusRequest
+      plural: serverstatusrequests
+    scope: Namespaced
+    version: v1
+- apiVersion: v1
+  kind: Namespace
+  metadata:
+    creationTimestamp: null
+    labels:
+      component: velero
+    name: velero
+  spec: {}
+- apiVersion: rbac.authorization.k8s.io/v1beta1
+  kind: ClusterRoleBinding
+  metadata:
+    creationTimestamp: null
+    labels:
+      component: velero
+    name: velero
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: cluster-admin
+  subjects:
+  - kind: ServiceAccount
+    name: velero
+    namespace: velero
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    creationTimestamp: null
+    labels:
+      component: velero
+    name: velero
+    namespace: velero
+- apiVersion: v1
+  data:
+    cloud: QVpVUkVfU1VCU0NSSVBUSU9OX0lEPTk5NjUwZmRkLWU4ZmYtNDBkZS1hZDhlLTMyMWQ2N2U2M2MzZgpBWlVSRV9URU5BTlRfSUQ9OThmMTM0MjktZDAzOC00ZTVlLTg1ZDgtODQ2YzZhOTYzMjg4CkFaVVJFX0NMSUVOVF9JRD0wYzBlZWViZS1mOTgzLTQ0MzgtODk5Zi1hNDA5NDc0ZjlkOWYKQVpVUkVfQ0xJRU5UX1NFQ1JFVD1OLXErZjpUNTcqa0c0dGZOR05mSk80dFM0ZGZnUDFLSgpBWlVSRV9SRVNPVVJDRV9HUk9VUD1IWURSTy1SRUxFQVNFLUNEVAo=
+  kind: Secret
+  metadata:
+    creationTimestamp: null
+    labels:
+      component: velero
+    name: cloud-credentials
+    namespace: velero
+  type: Opaque
+- apiVersion: velero.io/v1
+  kind: BackupStorageLocation
+  metadata:
+    creationTimestamp: null
+    labels:
+      component: velero
+    name: default
+    namespace: velero
+  spec:
+    config:
+      resourceGroup: HYDRO-RELEASE-CDT
+      storageAccount: cdtproductionk8sbackup
+    objectStorage:
+      bucket: velero
+      prefix: ""
+    provider: azure
+- apiVersion: velero.io/v1
+  kind: VolumeSnapshotLocation
+  metadata:
+    creationTimestamp: null
+    labels:
+      component: velero
+    name: default
+    namespace: velero
+  spec:
+    config: {}
+    provider: azure
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    creationTimestamp: null
+    labels:
+      component: velero
+    name: velero
+    namespace: velero
+  spec:
+    selector:
+      matchLabels:
+        deploy: velero
+    strategy: {}
+    template:
+      metadata:
+        annotations:
+          prometheus.io/path: /metrics
+          prometheus.io/port: "8085"
+          prometheus.io/scrape: "true"
+        creationTimestamp: null
+        labels:
+          component: velero
+          deploy: velero
+      spec:
+        containers:
+        - args:
+          - server
+          command:
+          - /velero
+          env:
+          - name: VELERO_SCRATCH_DIR
+            value: /scratch
+          - name: GOOGLE_APPLICATION_CREDENTIALS
+            value: /credentials/cloud
+          - name: AWS_SHARED_CREDENTIALS_FILE
+            value: /credentials/cloud
+          - name: AZURE_CREDENTIALS_FILE
+            value: /credentials/cloud
+          - name: http_proxy
+            value: http://fpapproxy.in.ril.com:8080
+          - name: https_proxy
+            value: http://fpapproxy.in.ril.com:8080
+          - name: no_proxy
+            value: 10.233.0.1
+          image: 10.26.61.34:8083/kubernetes/velero:1
+          imagePullPolicy: IfNotPresent
+          name: velero
+          ports:
+          - containerPort: 8085
+            name: metrics
+          resources: {}
+          volumeMounts:
+          - mountPath: /plugins
+            name: plugins
+          - mountPath: /scratch
+            name: scratch
+          - mountPath: /credentials
+            name: cloud-credentials
+          - mountPath: /etc/ssl/certs/rilca.crt
+            name: rilca-cert
+            subPath: rilca.crt
+        restartPolicy: Always
+        serviceAccountName: velero
+        volumes:
+        - emptyDir: {}
+          name: plugins
+        - emptyDir: {}
+          name: scratch
+        - name: rilca-cert
+          secret:
+            defaultMode: 420
+            secretName: rilca-cert
+        - name: cloud-credentials
+          secret:
+            secretName: cloud-credentials
+kind: List
+---
+apiVersion: v1
+data:
+  rilca.crt: I3JpbHN1YmNhCgotLS0tLUJFR0lOIENFUlRJRklDQVRFLS0tLS0KTUlJR0JqQ0NBKzZnQXdJQkFnSUtHa2JPdVFBQUFBQUFFekFOQmdrcWhraUc5dzBCQVFzRkFEQVVNUkl3RUFZRApWUVFERXdsU1NVeFNUMDlVUTBFd0hoY05NVGN3TlRFd01UQXhOVFF3V2hjTk1qUXhNREUwTWpFd056VTJXakJVCk1STXdFUVlLQ1pJbWlaUHlMR1FCR1JZRFkyOXRNUk13RVFZS0NaSW1pWlB5TEdRQkdSWURjbWxzTVJJd0VBWUsKQ1pJbWlaUHlMR1FCR1JZQ2FXNHhGREFTQmdOVkJBTVRDMUpKVEZOVlFrTkJSVTVVTUlJQ0lqQU5CZ2txaGtpRwo5dzBCQVFFRkFBT0NBZzhBTUlJQ0NnS0NBZ0VBdDRMSTBMVjFqdzcySFhRakVRb3N5ZFRhaGpFS0lFbndnQmQ1CmxKeVFYcWN0M1h1V0NlN3NhUm14L0FGMEs5WkhBamhHREQ3djErWGxTYXZOeGZDODdrY3dOUng0bTA2WGpaa20KQVhsTHI3eWRtMjdpdlMxaGtKZWtTd2RvNDdESW9EOFZQcEwxT09LNWhGOGtUaDBnZGRvV1EwbXUwUnRNeUFpcgpmNk5QYkVlNXVDV3VCQmRPclZobXNHTWhQZVprRFpXSTJPdXA3QytJVFkyVWFUNUJ1ZHRXTFJQWUZzby9BWGJlClJoQStIbE9seUdXeDJCcEJhMm8vcnl1eVcvUlZGazdhRS9adnQzcVdMY0dUelUrMWZQT0RFbmpjQTRsYU1tT3QKQWtybDU4cnI4aDgyZERyZ1dzaXdUTkZZNUx5cnJEcXI3NFdrY0FkT1hpOWg2MmNSb2p3UGF3N2h0bW4rdVR6UwpxWW9xOWFnVUd3NzB3WnFkVlhraWxqYlZlcXdXcnZTUmFsYzFzYW4xVG0vdVdsaHlWQUpEYm9jM3RzRkVmU3VkCk5hc1pkU0RuV0hpZmV2VzlLRTlqVkUwMDRJcnpkZk5mM1hSekdobGRjUjQ2eTMzZGNnb3d5N1Vmb0hsaVYzeEoKbUNGUThkSUR4NTFObk50QmdoRHFnZElKYXJnSGovM3ZUUklFR1BYUS9NbmtBS3YyZWw3VXFzQVMrdzVxUnZiQgp1OEg4VU9qU1pNYjFQTE1HbmV4M2pWZUxnUHM2OVJ1R0hpU2pQbzN4bkp6aTlxc0FNNExMV2MxYlZ4VVVtOXZjCnQwOWdHTmwvNnl1dlByV1JuWjg3UmpNQ3ZmN3JnUHVxaVJTRjRzSjJFd1oyMDR1TUI5MnVuTko0ODBzR01oeDIKWVNjNDZDTUNBd0VBQWFPQ0FSZ3dnZ0VVTUJBR0NTc0dBUVFCZ2pjVkFRUURBZ0VBTUIwR0ExVWREZ1FXQkJUMwprUDdJVkJWRXNJakQ1RlE4YmJUOWJUT1J3ekFaQmdrckJnRUVBWUkzRkFJRURCNEtBRk1BZFFCaUFFTUFRVEFMCkJnTlZIUThFQkFNQ0FZWXdEd1lEVlIwVEFRSC9CQVV3QXdFQi96QWZCZ05WSFNNRUdEQVdnQlEyald4bzQ4Y1QKTTRIOEQ1Y2kyTGZNTzJiNW56QTRCZ05WSFI4RU1UQXZNQzJnSzZBcGhpZG9kSFJ3T2k4dlkzSnNMbkpwYkM1agpiMjB2Y205dmRFTkJMMUpKVEhKdmIzUkRRUzVqY213d1RRWUlLd1lCQlFVSEFRRUVRVEEvTUQwR0NDc0dBUVVGCkJ6QUNoakZvZEhSd09pOHZZM0pzTG5KcGJDNWpiMjB2VW05dmRFTkJMMUpKVEZKUFQxUkRRVjlTU1V4U1QwOVUKUTBFdVkzSjBNQTBHQ1NxR1NJYjNEUUVCQ3dVQUE0SUNBUUExcCt3MTgweXlBdndycWs1T3BJMjYzbURNL1prUgpJdWRZMFNJT0FKZm1KUXlKUnZrYnNHeEt5L05USitVclYrbFJFT3dOOCtYcFBLSnZKSkZJRXBJZFd1VDNNa2k2Ck45eVlnYm1qUCtiTmhVVkl0NzNqQWVnSjBxa1VnZWRVWHNOZjRHblM3cEZzMFIyWEd6Z3p0Rk41ckEzaWNxRFcKOTIxU1Z5Z250dWNMcGJLSS93UW12QWdrZnBHS0IyNGdaTnhvY2hzbGU2UlZucDhqdnQ0MG43ZHZrODFJemEzKwpITmNFbGo2eGNGb2ZSbXU2dHB6ZUYzOTRuVUYyN2QzSWlBZ1pYOXZGeHNPY0NVenNvdTMzcmo1VjBVT3VOdnF2Cm8zQ09JcWNQQXhBMWc3Z1dUYTVJMGM0TTBIdEJPTnY4VUw4TFhPR2ZoTU5QM2NGVFNhMFEzQ25ZSExxSlY3WWcKOFBaNDYwanFudlhXRVRUT3dmRUN4ZXZwOW5taDJGbUZzRkFjZ2w1eEs5djdqZ1kvRVU5akFsNUg3Q3ExVFBNWAp1N2VTU25WdVF1aWxIM1ZHdDJYeE5tZ2kvR2lYWjVhV3dRbmMxS0E5S1VKVTl4dFpPUzBscmExQ2Y4MlZvdjNvCmtmNWpXYU95OGY5ZzhqQlpEKzVaTkp0dkthWlpSZlpVVHRWY2dlWFU4QkcyZGNaZWVFV3NJMkRSeGhxZ3VNRUkKMUNTV0tEMGxJSWNEclZTRVQ2cGRaU29xaWZKY095MGJWZnVUajB6WHhGRE5kZFBkM3MyRURiNXdXRGNCdDVPdgpsSktLTnphMnQrMlVJUHh2ZjJrd2E2TEVXTGFTM0E5R0xEM2tTcWVxM1EwaEFvVjR2WnZ2ZTd3QmJhYkkwd3BaCkg3R01SVDljS0Y0VHpnPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQoKCgo=
+kind: Secret
+metadata:
+  name: rilca-cert
+  namespace: velero
+type: Opaque

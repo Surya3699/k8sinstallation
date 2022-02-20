@@ -1,0 +1,6 @@
+- hosts: all
+  tasks:
+  - name: Remove Metricbeat Deployments and Daemonsets
+    shell: kubectl delete deployemnts --kubeconfig=/etc/kubernetes/admin.conf -n kube-system metricbeat; kubectl delete daemonsets --kubeconfig=/etc/kubernetes/admin.conf -n kube-system metricbeat
+  - name: Apply new yamls
+    shell: kubectl apply --kubeconfig=/etc/kubernetes/admin.conf -f /app/data/metricbeat-k8s/metricbeat-kubernetes.yaml

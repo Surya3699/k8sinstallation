@@ -1,0 +1,53 @@
+---
+# tasks file for k8s-binary
+
+- name: Copy the the upgrade binaries folder 
+  copy:
+    src: /app/data/upgrade-binaries
+    dest: /app/data/
+    mode: 755
+  when:
+    - inventory_hostname != groups['all']|first
+
+
+- name: Generate the kubeadm upgrade config file - 1.19.0
+  template: 
+    src: kubeadm-upgd-1.19.0.yaml.j2
+    dest: /app/data/upgrade-binaries/kubeadm-upgd-1.19.0.yaml
+  when:
+    - inventory_hostname == groups['kube-master']|first
+
+
+- name: Generate the kubeadm upgrade config file - 1.20.5
+  template:
+    src: kubeadm-upgd-1.20.5.yaml.j2
+    dest: /app/data/upgrade-binaries/kubeadm-upgd-1.20.5.yaml
+  when:
+    - inventory_hostname == groups['kube-master']|first
+#    - ansible_hostname is search("m1")
+
+
+
+- name: Copy the config.yaml file for kubelet 
+  template:
+    src: kubelet-config.yaml.j2
+    dest: /app/data/upgrade-binaries/kubelet-config.yaml
+  run_once: true
+  delegate_to: "{{groups ['kube-master'][0] }}"
+
+
+- name: Copy the kubeadm-flags.env for kubelet
+  template:
+    src: kubelet-kubeadm-flags.env.j2
+    dest: /app/data/upgrade-binaries/kubelet-kubeadm-flags.env
+  run_once: true
+  delegate_to: "{{groups ['kube-master'][0] }}"
+
+
+- name: Copy the kubelet.service for kubelet
+  template:
+    src: kubelet.service.j2
+    dest: /app/data/upgrade-binaries/kubelet.service
+  run_once: true
+  delegate_to: "{{groups ['kube-master'][0] }}"
+

@@ -1,0 +1,7 @@
+- hosts: k8s-new-worker
+  gather_facts: True
+  roles:
+    - k8s-new-worker
+  tags:
+  - k8s-new-worker
+

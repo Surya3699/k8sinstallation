@@ -1,0 +1,103 @@
+
+- name: Copy cert generation binaries and etcd binaries
+  copy:
+    src: /app/data/k8s-install-binaries/{{ item }}
+    dest: /usr/local/bin/
+    mode: '755'
+    #remote_src: true
+  with_items:
+    ['cfssl' , 'etcdctl' , 'etcd' , 'cfssljson' ]
+
+
+- name: Create etcd directories 
+  file: 
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '755'
+  with_items: 
+    - /root/etcd-cert1/
+    - /var/lib/etcd/
+    - /etc/etcd/
+    - /etc/etcd/ssl
+
+- name: copy json files to etcd-cert dir to generate certificates
+  template:
+    src: ca-config.json.j2
+    dest: /root/etcd-cert1/ca-config.json
+    mode: 0700
+  run_once: yes
+  delegate_to: "{{groups ['etcd'][0] }}"
+
+- name: copy json files to etcd-cert dir to generate certificates
+  template:
+    src: ca-csr.json.j2
+    dest: /root/etcd-cert1/ca-csr.json
+    mode: 0700
+  run_once: yes
+  delegate_to: "{{groups ['etcd'][0] }}"
+
+- name: copy json files to etcd-cert dir to generate certificates
+  template:
+    src: etcd-csr.json.j2
+    dest: /root/etcd-cert1/etcd-csr.json
+    mode: 0700
+  run_once: yes
+  delegate_to: "{{groups ['etcd'][0] }}"
+
+
+- name: generate CA files
+  #command: cfssl gencert -initca ca-csr.json | cfssljson -bare ca
+  shell: "{{ item }}"
+  args:
+    chdir: /root/etcd-cert1/
+  with_items:
+  - "cfssl gencert -initca ca-csr.json | cfssljson -bare ca"
+  run_once: yes
+  delegate_to: "{{groups ['etcd'][0] }}"
+
+
+- name: set etcd_access_addresses
+  set_fact:
+    etcd_access_addresses: |-
+      {% for item in groups['etcd'] -%}
+        {{ hostvars[item]["ansible_host"] }}{% if not loop.last %},{% endif %}
+      {%- endfor %}
+  when: "'etcd' in groups"
+
+  
+- name: Generate etcd cert files from CA files
+  shell: "{{ item }}"
+  run_once: yes
+  args:
+    chdir: /root/etcd-cert1/
+  with_items:
+  - "cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -hostname={{ etcd_access_addresses }},127.0.0.1,kubernetes.default -profile=server etcd-csr.json | cfssljson -bare etcd"
+  delegate_to: "{{groups ['etcd'][0] }}"
+
+
+
+- name: Copy etcd certificates
+  copy:
+    src: /root/etcd-cert1/{{item}}
+    dest: /etc/etcd/ssl/
+  with_items: 
+    ['etcd.pem' , 'etcd-key.pem' , 'ca.pem']
+  when: "'etcd' in groups"
+    
+
+
+- name: etcd service file creation
+  template:
+    src: etcd.service.j2
+    dest: /etc/systemd/system/etcd.service
+    mode: 755
+
+
+- name: systemctl reload etcd
+  systemd:
+    state: restarted
+    daemon_reload: yes
+    enabled: yes
+    name: etcd.service

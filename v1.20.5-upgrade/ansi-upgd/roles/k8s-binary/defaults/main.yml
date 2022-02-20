@@ -1,0 +1,13 @@
+---
+# defaults file for k8s-binary
+
+kube_apiserver_ips: |-
+  {% for item in groups['kube-master'] -%}
+    {{ hostvars[item]["ansible_host"] }}{% if not loop.last %},{% endif %}
+  {%- endfor %}
+
+kube_apiserver_hosts: |-
+  {% for item in groups['kube-master'] -%}
+    {{ hostvars[item].inventory_hostname}}{% if not loop.last %},{% endif %}
+  {%- endfor %}
+

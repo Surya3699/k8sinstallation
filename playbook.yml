@@ -1,0 +1,37 @@
+---
+- hosts: etcd
+  gather_facts: True
+  roles:
+    - etcd
+  tags:
+  - etcd
+
+- hosts: all
+  gather_facts: True
+  roles:
+    - k8s-binary
+  tags:
+  - k8s-binary
+
+
+- hosts: kube-master
+  gather_facts: True
+  roles:
+    - k8s-master
+  tags:
+  - k8s-master
+
+
+- hosts: kube-worker
+  gather_facts: True
+  roles:
+    - k8s-worker
+  tags:
+  - k8s-worker
+
+- hosts: kube-mon
+  gather_facts: True
+  roles:
+    - k8s-mon
+  tags:
+  - k8s-mon

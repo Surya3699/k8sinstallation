@@ -1,0 +1,74 @@
+- hosts: kube-oth-masters
+  gather_facts: True
+  serial: 1
+  tasks:
+
+  - name: Cordon the nodes
+    shell: /usr/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf drain {{ansible_hostname|lower}} --ignore-daemonsets --delete-local-data
+    delegate_to: "{{ groups['kube-master'][0] }}"
+    register: cordon_rslt
+
+  - name: debug
+    debug: var=cordon_rslt.stdout.split('\n')
+
+
+  - pause:
+      prompt: "Check if drain command is completed for the node {{ansible_hostname|lower}} "
+
+
+  - name: install kubernetes binaries
+    yum:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - "/app/data/upgrade-binaries/kubelet-1.19.0-0.x86_64.rpm"
+      - "/app/data/upgrade-binaries/kubectl-1.19.0-0.x86_64.rpm"
+      - "/app/data/upgrade-binaries/kubeadm-1.19.0-0.x86_64.rpm"
+      - "/app/data/upgrade-binaries/cri-tools-1.13.0-0.x86_64.rpm"
+      - "/app/data/upgrade-binaries/kubernetes-cni-0.8.7-0.x86_64.rpm"
+
+  - name: copy the kubelet service file
+    copy:
+      src: /app/data/upgrade-binaries/kubelet.service
+      dest: /usr/lib/systemd/system/kubelet.service
+      mode: 755
+
+
+  - pause:
+      prompt: "Going to run the kubeadm upgrade command"
+
+  - name: kubernetes Upgrade
+    shell: /usr/bin/kubeadm upgrade node
+    register: rslt
+
+  - debug:
+      var=rslt.stdout.split('\n')
+
+  - pause:
+      prompt: "Proceed with kubelet restart"
+
+
+  - name: Reload,enable and restart kubelet
+    systemd:
+      name: kubelet
+      state: restarted
+      daemon_reload: true
+      enabled: yes
+
+  - name: Remove kubernetes old binaries 
+    file:
+      path: "{{ item }}"
+      state: absent
+    with_items:
+      - /usr/local/bin/kubeadm
+      - /usr/local/bin/kubelet
+      - /usr/local/bin/kubectl
+
+  - name: Uncordon the nodes
+    shell: /usr/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf uncordon {{ansible_hostname|lower}}
+    delegate_to: "{{ groups['kube-master'][0] }}"
+
+  - pause:
+      prompt: "Check for the node {{ansible_hostname|lower}} status   "
+
+

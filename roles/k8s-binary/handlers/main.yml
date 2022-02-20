@@ -1,0 +1,17 @@
+---
+# handlers file for k8s-binary
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: true
+
+- name: Reload kubelet
+  service:
+    name: kubelet
+    state: restarted
+
+- name: Reload docker
+  service:
+    name: docker
+    state: restarted
+

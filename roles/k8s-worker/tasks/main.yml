@@ -1,0 +1,78 @@
+---
+# tasks file for k8s-worker
+
+- name: Create k8s-worker directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '755'
+  with_items:
+    - /etc/nginx
+
+
+- name: Create nginx.conf file
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    mode: 755
+  #when: "'kube-worker' in groups"
+
+
+- name: Create nginx-proxy.yaml file
+  template:
+    src: nginx-proxy.yaml.j2
+    dest: /etc/kubernetes/manifests/nginx-proxy.yaml
+    mode: 755
+  #when: "'kube-worker' in groups"
+
+- name: run kubeadm token
+  command: /usr/bin/kubeadm token create --print-join-command
+  delegate_to: "{{groups ['kube-master'][0] }}"
+  register: k8s_worker_token
+  delegate_to: "{{groups ['kube-master'][0] }}"
+
+- debug:
+    var=k8s_worker_token.stdout
+
+- name: line for k8s worker nodes
+  command: "{{ k8s_worker_token.stdout }} --ignore-preflight-errors=DirAvailable--etc-kubernetes-manifests"
+
+
+- name: Update server field in kubelet kubeconfig
+  lineinfile:
+    dest: "/etc/kubernetes/kubelet.conf"
+    regexp: 'server:'
+    line: '    server: https://127.0.0.1:6443'
+    backup: yes
+
+
+- name: Update server field in kube-proxy kubeconfig
+  shell: >-
+    /usr/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf get configmap kube-proxy -n kube-system -o yaml
+    | sed 's#server:.*#server: https://127.0.0.1:6443#g'
+    | /usr/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf replace -f -
+  run_once: true
+  delegate_to: "{{groups ['kube-master'][0] }}"
+
+
+
+- name: Restart all kube-proxy pods to ensure that they load the new configmap
+  shell: "/usr/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf delete pod -n kube-system -l k8s-app=kube-proxy --force --grace-period=0"
+  run_once: true
+  delegate_to: "{{groups ['kube-master'][0] }}"
+
+- name: Create kubelet respective files - config.yaml
+  template:
+    src: config.yaml.j2
+    dest: /var/lib/kubelet/config.yaml
+    mode: 755
+
+- name: Reload,enable and restart kubelet
+  systemd:
+    name: kubelet
+    state: restarted
+    daemon_reload: true
+    enabled: yes
+

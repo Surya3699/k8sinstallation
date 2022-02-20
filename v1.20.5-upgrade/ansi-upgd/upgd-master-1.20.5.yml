@@ -1,0 +1,80 @@
+- hosts: kube-master
+  gather_facts: true
+  tasks:
+
+  - pause:
+      prompt: "Please run the drain command from master node {{ansible_hostname}} "
+
+
+  - name: install kubernetes binaries
+    yum:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - "/app/data/upgrade-binaries/kubelet-1.20.5-0.x86_64.rpm"
+      - "/app/data/upgrade-binaries/kubectl-1.20.5-0.x86_64.rpm"
+      - "/app/data/upgrade-binaries/kubeadm-1.20.5-0.x86_64.rpm"
+      - "/app/data/upgrade-binaries/cri-tools-1.13.0-0.x86_64.rpm"
+      - "/app/data/upgrade-binaries/kubernetes-cni-0.8.7-0.x86_64.rpm"
+
+  - name: copy the kubelet service file
+    copy:
+      src: /app/data/upgrade-binaries/kubelet.service
+      dest: /usr/lib/systemd/system/kubelet.service
+      mode: 755
+
+  - name: kubernetes Upgrade --dry-run
+    shell: /usr/bin/kubeadm upgrade apply --config=/app/data/upgrade-binaries/kubeadm-upgd-1.20.5.yaml --dry-run --force
+    register: k8s_dryrun_v20
+    when:
+      ansible_hostname is search("m1")
+
+  - debug:
+      var=k8s_dryrun_v20.stdout.split('\n')
+
+  - name: Saving output to /app/data/upgrade-binaries/k8s_dryrun_1.20.5.out
+    copy:
+      content: "{{ k8s_dryrun_v20 | to_nice_json }}"
+      dest: /app/data/upgrade-binaries/k8s_dryrun_1.20.5.out
+
+  - pause:
+      prompt: "validate dry-run"
+
+  - name: kubernetes Upgrade
+    shell: /usr/bin/kubeadm upgrade apply --config=/app/data/upgrade-binaries/kubeadm-upgd-1.20.5.yaml -f
+    register: k8s_upgd_v20
+    when:
+      ansible_hostname is search("m1")
+
+  - debug:
+      var=k8s_upgd_v20.stdout.split('\n')
+
+  - name: Saving output to /app/data/upgrade-binaries/k8s_upgd_1.20.5.out
+    copy:
+      content: "{{ k8s_upgd_v20 | to_nice_json }}"
+      dest: /app/data/upgrade-binaries/k8s_upgd_1.20.5.out
+
+  - name: copy the kubeadm-file file for kubelet
+    copy:
+      src: /app/data/upgrade-binaries/kubelet-kubeadm-flags.env
+      dest: /var/lib/kubelet/kubeadm-flags.env
+      mode: 755
+
+  - name: copy the kubeadm-file file for kubelet
+    copy:
+      src: /app/data/upgrade-binaries/kubelet-config.yaml
+      dest: /var/lib/kubelet/config.yaml
+      mode: 755
+
+  - name: Reload,enable and restart kubelet
+    systemd:
+      name: kubelet
+      state: started
+      daemon_reload: true
+      enabled: yes
+
+  - name: Cert Update
+    shell: scp -rp /etc/kubernetes/admin.conf /home/kubadm/.kube/config; chown -R kubadm:kubadm /home/kubadm/.kube/
+
+  - name: Cert Update for kubectl Commands
+    shell: scp -rp /etc/kubernetes/admin.conf /root/.kube/config

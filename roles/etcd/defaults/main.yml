@@ -1,0 +1,11 @@
+---
+# defaults file for etcd
+#
+#
+
+
+etcd_initial_cluster: |-
+  {% for item in groups['etcd'] -%}
+    {{ hostvars[item].inventory_hostname}}=https://{{ hostvars[item]["ansible_host"] }}:2380{% if not loop.last %},{% endif %}
+  {%- endfor %}
+

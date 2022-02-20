@@ -1,0 +1,152 @@
+---
+# tasks file for kube-master
+
+
+- name: Create kubeadm files
+  template:
+    src: kubeadm-config.yaml.j2
+    dest: /app/data/k8s-install-binaries/kubeadm-config.yaml
+    mode: 755
+    
+- name: Create cert directories 
+  file: 
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '755'
+  with_items: 
+    - /etc/etcd/
+    - /etc/etcd/ssl
+
+
+- name: Copy etcd certificates
+  copy:
+    src: /root/etcd-cert1/{{item}}
+    dest: /etc/etcd/ssl/
+  with_items: 
+    ['etcd.pem' , 'etcd-key.pem' , 'ca.pem']
+
+- name: Copy Velero binary
+  copy: 
+    src: /app/data/k8s-install-binaries/velero
+    dest: /usr/bin
+    mode: 755
+  when:
+    - inventory_hostname == groups['kube-master']|first
+
+- name: kubernetes Install --dry-run
+  shell: /usr/bin/kubeadm init --config=/app/data/k8s-install-binaries/kubeadm-config.yaml --dry-run
+  register: k8s_dryrun
+  when:
+    - inventory_hostname == groups['kube-master']|first
+
+
+- debug:
+    var=k8s_dryrun.stdout.split('\n')
+  when:
+    - inventory_hostname == groups['kube-master']|first
+
+
+- name: Saving output to /app/data/k8s-install-binaries/k8s_dryrun.out
+  copy:
+    content: "{{ k8s_dryrun | to_nice_json }}"
+    dest: /app/data/k8s-install-binaries/k8s_dryrun.out
+  when:
+    - inventory_hostname == groups['kube-master']|first
+
+
+- pause:
+    prompt: "validate dry-run"
+  when:
+    - inventory_hostname == groups['kube-master']|first
+
+
+- name: kubernetes Install
+  shell: /usr/bin/kubeadm init --config=/app/data/k8s-install-binaries/kubeadm-config.yaml
+  register: k8s_install
+  when:
+    - inventory_hostname == groups['kube-master']|first
+
+
+- debug:
+    var=k8s_install.stdout.split('\n')
+  when:
+    - inventory_hostname == groups['kube-master']|first
+
+
+- name: Saving output to /app/data/k8s-install-binaries/k8s_install.out
+  copy:
+    content: "{{ k8s_install | to_nice_json }}"
+    dest: /app/data/k8s-install-binaries/k8s_install.out
+  when:
+    - inventory_hostname == groups['kube-master']|first
+    
+
+- name:  Create node-crb yaml
+  template:
+    src: node-crb.yaml.j2
+    dest: /app/data/k8s-install-binaries/node-crb.yaml
+  when:
+    - inventory_hostname == groups['kube-master']|first
+
+
+
+- name: Apply node-crb yaml
+  shell: /usr/bin/kubectl apply -f /app/data/k8s-install-binaries/node-crb.yaml --kubeconfig /etc/kubernetes/admin.conf
+  when:
+    - inventory_hostname == groups['kube-master']|first
+
+
+
+- name: copy pki folder to master2 and master3
+  copy:
+    src: /etc/kubernetes/pki
+    dest: /etc/kubernetes/
+  when:
+    - inventory_hostname != groups['kube-master']|first
+
+- name: run kubeadm on other masters
+  shell: /usr/bin/kubeadm init --config=/app/data/k8s-install-binaries/kubeadm-config.yaml
+  when:
+    - inventory_hostname != groups['kube-master']|first
+
+- name: Create kubelet respective files - config.yaml
+  template:
+    src: config.yaml.j2
+    dest: /var/lib/kubelet/config.yaml
+    mode: 755
+
+- name: Reload,enable and restart kubelet
+  systemd:
+    name: kubelet
+    state: restarted
+    daemon_reload: true
+    enabled: yes
+
+- name:  Create weave.yaml
+  template:
+    src: weave.yaml.j2
+    dest: /app/data/k8s-install-binaries/weave.yaml
+  when:
+    - inventory_hostname == groups['kube-master']|first
+
+
+
+- name: Apply weave n/w yaml
+  shell: kubectl apply -f /app/data/k8s-install-binaries/weave.yaml --kubeconfig /etc/kubernetes/admin.conf
+  when:
+    - inventory_hostname == groups['kube-master']|first
+
+- name: Kube folder creation
+  shell: cd /root; mkdir .kube;
+  when:
+    - inventory_hostname == groups['kube-master']|first  
+  ignore_errors: true
+
+- name: Copy config file
+  copy: 
+    src: /etc/kubernetes/admin.conf
+    dest: /root/.kube/config
+  when:
+    - inventory_hostname == groups['kube-master']|first
